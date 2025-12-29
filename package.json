@@ -1,0 +1,60 @@
+{
+  "name": "@nicolaygerold/pluck",
+  "version": "0.1.0",
+  "description": "LLM-native HTML selector library. Extract data with XPath and CSS.",
+  "author": "Nicolay Gerold",
+  "license": "MIT",
+  "keywords": [
+    "html",
+    "xpath",
+    "css",
+    "selector",
+    "scraping",
+    "parsing",
+    "extraction"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicolaygerold/pluck"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "lint": "oxlint src tests",
+    "format": "oxfmt src tests",
+    "format:check": "oxfmt --check src tests",
+    "test": "bun test",
+    "check:all": "bun test && bun run lint && bun run format:check",
+    "check:fix": "oxfmt src tests && oxlint --fix src tests && bun test",
+    "build": "bun build src/index.ts --outdir dist --target node && bun run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build:cjs": "bun build src/index.ts --outdir dist --target node --format cjs --outfile dist/index.cjs",
+    "prepublishOnly": "bun run build && bun run build:cjs"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@metrichor/jmespath": "^0.3.1",
+    "linkedom": "^0.18.12"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
