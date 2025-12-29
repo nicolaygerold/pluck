@@ -38,6 +38,28 @@ describe("pluck", () => {
       const href = doc.xpath("//a/@href").get();
       expect(href).toBe("/buy/123");
     });
+
+    test("returns ok: false for invalid xpath with unclosed predicate", () => {
+      const doc = pluck(html);
+      const sel = doc.xpath("//[invalid-xpath");
+      expect(sel.ok).toBe(false);
+      expect(sel.count).toBe(0);
+      expect(sel.get()).toBe(null);
+    });
+
+    test("returns ok: false for xpath with invalid syntax", () => {
+      const doc = pluck(html);
+      const sel = doc.xpath("//div[");
+      expect(sel.ok).toBe(false);
+      expect(sel.count).toBe(0);
+    });
+
+    test("returns ok: false for xpath starting with invalid chars", () => {
+      const doc = pluck(html);
+      const sel = doc.xpath("[invalid");
+      expect(sel.ok).toBe(false);
+      expect(sel.count).toBe(0);
+    });
   });
 
   describe("css", () => {

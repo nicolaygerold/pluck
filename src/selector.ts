@@ -1,7 +1,7 @@
 import type { JsonSelector, Logger, MappedSelector, PluckOptions, SelectResult } from "./types";
 import { ConsoleLogger, NoopLogger } from "./types";
 import { extractValue, parseCSSPseudo, parseXPathPseudo } from "./pseudo";
-import { evaluateXPath } from "./xpath";
+import { evaluateXPath, splitXPathUnion } from "./xpath";
 import { extractRegex } from "./regex";
 import { search as jmespathSearch, type JSONValue } from "@metrichor/jmespath";
 
@@ -77,6 +77,48 @@ export class Selector implements Iterable<Selector> {
   }
 
   xpath(query: string): Selector {
+    const unionParts = splitXPathUnion(query);
+    if (unionParts.length > 1) {
+      const allStrings: string[] = [];
+      const allNodes: Node[] = [];
+      const seenNodes = new Set<Node>();
+
+      for (const part of unionParts) {
+        const partResult = this.#evaluateSingleXPath(part.trim());
+        if (partResult === null) {
+          return new Selector([], this.#document, query, this.#options);
+        }
+        if (partResult.type === "strings") {
+          allStrings.push(...partResult.values);
+        } else {
+          for (const node of partResult.nodes) {
+            if (!seenNodes.has(node)) {
+              seenNodes.add(node);
+              allNodes.push(node);
+            }
+          }
+        }
+      }
+
+      if (allStrings.length > 0) {
+        return new TextSelector(allStrings, this.#document, query, this.#options);
+      }
+      return new Selector(allNodes, this.#document, query, this.#options);
+    }
+
+    const result = this.#evaluateSingleXPath(query);
+    if (result === null) {
+      return new Selector([], this.#document, query, this.#options);
+    }
+    if (result.type === "strings") {
+      return new TextSelector(result.values, this.#document, query, this.#options);
+    }
+    return new Selector(result.nodes, this.#document, query, this.#options);
+  }
+
+  #evaluateSingleXPath(
+    query: string,
+  ): { type: "strings"; values: string[] } | { type: "nodes"; nodes: Node[] } | null {
     const parsed = parseXPathPseudo(query);
     let xpathResults: ReturnType<typeof evaluateXPath>;
 
@@ -89,7 +131,7 @@ export class Selector implements Iterable<Selector> {
         parsed: parsed.query,
         error: message,
       });
-      return new Selector([], this.#document, query, this.#options);
+      return null;
     }
 
     const stringResults: string[] = [];
@@ -104,18 +146,17 @@ export class Selector implements Iterable<Selector> {
     }
 
     if (stringResults.length > 0) {
-      return new TextSelector(stringResults, this.#document, query, this.#options);
+      return { type: "strings", values: stringResults };
     }
 
     if (parsed.extract === "text" || parsed.extract === "attr") {
       const extracted = nodeResults
         .map((n) => extractValue(n, parsed.extract, parsed.attrName))
         .filter((v): v is string => v !== null);
-
-      return new TextSelector(extracted, this.#document, query, this.#options);
+      return { type: "strings", values: extracted };
     }
 
-    return new Selector(nodeResults, this.#document, query, this.#options);
+    return { type: "nodes", nodes: nodeResults };
   }
 
   css(query: string): Selector {

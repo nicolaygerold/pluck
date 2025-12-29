@@ -70,7 +70,7 @@ export function evaluateXPath(
   }
 
   // Handle union operator |
-  const unionParts = splitUnion(expr);
+  const unionParts = splitXPathUnion(expr);
   if (unionParts.length > 1) {
     logger.debug("processing xpath union", { parts: unionParts.length });
     const allResults: XPathResult[] = [];
@@ -92,7 +92,7 @@ export function evaluateXPath(
   return evaluateSingleXPath(expr, contexts, logger);
 }
 
-function splitUnion(expr: string): string[] {
+export function splitXPathUnion(expr: string): string[] {
   const parts: string[] = [];
   let current = "";
   let depth = 0;
@@ -144,10 +144,15 @@ function splitUnion(expr: string): string[] {
 }
 
 function evaluateSingleXPath(expr: string, contexts: Node[], logger: Logger): XPathResult[] {
-  const steps = parseXPath(expr, logger);
+  const { steps, valid } = parseXPath(expr, logger);
+
+  if (!valid) {
+    return [];
+  }
 
   if (steps.length === 0 && expr.trim() !== "") {
     logger.warn("xpath parsing produced no steps", { expression: expr });
+    return [];
   }
 
   let results: XPathResult[] = [...contexts];
@@ -159,7 +164,7 @@ function evaluateSingleXPath(expr: string, contexts: Node[], logger: Logger): XP
   return results;
 }
 
-function parseXPath(expr: string, logger: Logger): Step[] {
+function parseXPath(expr: string, logger: Logger): { steps: Step[]; valid: boolean } {
   const steps: Step[] = [];
   let remaining = expr.trim();
 
@@ -170,17 +175,18 @@ function parseXPath(expr: string, logger: Logger): Step[] {
     }
     if (rest === remaining) {
       if (remaining.length > 0) {
-        logger.warn("unparseable xpath segment", {
+        logger.error("invalid xpath: unparseable segment", {
           segment: remaining.slice(0, 50),
           expression: expr,
         });
+        return { steps: [], valid: false };
       }
       break;
     }
     remaining = rest;
   }
 
-  return steps;
+  return { steps, valid: true };
 }
 
 function parseStep(expr: string): { step: Step | null; rest: string } {

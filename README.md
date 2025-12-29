@@ -302,6 +302,12 @@ if (result.ok) {
 } else {
   console.log("Selector failed:", result.selector);
 }
+
+// Invalid selectors return ok: false (no exceptions)
+const invalid = doc.xpath("//[broken");
+invalid.ok;    // false
+invalid.count; // 0
+invalid.get(); // null
 ```
 
 ## LLM Tips
