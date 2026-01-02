@@ -51,6 +51,14 @@ export class Selector implements Iterable<Selector> {
     return this.#selector;
   }
 
+  protected get document(): Document {
+    return this.#document;
+  }
+
+  protected get options(): PluckOptions {
+    return this.#options;
+  }
+
   get(defaultValue?: string): string | null {
     const values = this.getall();
     if (values.length === 0) {
@@ -300,6 +308,10 @@ export class Selector implements Iterable<Selector> {
 
   html(): string | null {
     const node = this.#nodes[0];
+    if (node?.nodeType === 9) {
+      const doc = node as Document;
+      return doc.documentElement?.outerHTML ?? null;
+    }
     if (node?.nodeType === 1) {
       return (node as Element).innerHTML;
     }
@@ -376,6 +388,51 @@ class TextSelector extends Selector {
 
   override map<T>(fn: (value: string) => T): MappedSelector<T> {
     return new MappedSelectorImpl(this.#values.map(fn), this.ok);
+  }
+
+  override first(): Selector {
+    if (this.#values.length === 0) {
+      return new TextSelector([], this.document, this.selector, this.options);
+    }
+    return new TextSelector([this.#values[0]], this.document, this.selector, this.options);
+  }
+
+  override last(): Selector {
+    if (this.#values.length === 0) {
+      return new TextSelector([], this.document, this.selector, this.options);
+    }
+    return new TextSelector(
+      [this.#values[this.#values.length - 1]],
+      this.document,
+      this.selector,
+      this.options,
+    );
+  }
+
+  override eq(index: number): Selector {
+    const value = this.#values[index];
+    if (value === undefined) {
+      return new TextSelector([], this.document, this.selector, this.options);
+    }
+    return new TextSelector([value], this.document, this.selector, this.options);
+  }
+
+  override each(fn: (sel: Selector, index: number) => void): void {
+    this.#values.forEach((value, i) => {
+      fn(new TextSelector([value], this.document, this.selector, this.options), i);
+    });
+  }
+
+  override toArray(): Selector[] {
+    return this.#values.map(
+      (value) => new TextSelector([value], this.document, this.selector, this.options),
+    );
+  }
+
+  override *[Symbol.iterator](): Iterator<Selector> {
+    for (const value of this.#values) {
+      yield new TextSelector([value], this.document, this.selector, this.options);
+    }
   }
 
   override jmespath(query: string): JsonSelector {

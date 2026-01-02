@@ -1765,4 +1765,107 @@ describe("pluck complex", () => {
       expect(doc.css(".nonexistent").outerHtml()).toBe(null);
     });
   });
+
+  describe("attribute iteration", () => {
+    test("iterating xpath @attr returns individual values via text()", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a></div>`;
+      const doc = pluck(testHtml);
+      const hrefs: string[] = [];
+      for (const el of doc.xpath("//a/@href")) {
+        hrefs.push(el.text());
+      }
+      expect(hrefs).toEqual(["/link1", "/link2"]);
+    });
+
+    test("iterating xpath @attr returns individual values via get()", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a></div>`;
+      const doc = pluck(testHtml);
+      const hrefs: string[] = [];
+      for (const el of doc.xpath("//a/@href")) {
+        hrefs.push(el.get()!);
+      }
+      expect(hrefs).toEqual(["/link1", "/link2"]);
+    });
+
+    test("iterating css ::attr() returns individual values", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a></div>`;
+      const doc = pluck(testHtml);
+      const hrefs: string[] = [];
+      for (const el of doc.css("a::attr(href)")) {
+        hrefs.push(el.text());
+      }
+      expect(hrefs).toEqual(["/link1", "/link2"]);
+    });
+
+    test("first() on attribute selector returns first value", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a></div>`;
+      const doc = pluck(testHtml);
+      expect(doc.xpath("//a/@href").first().text()).toBe("/link1");
+    });
+
+    test("last() on attribute selector returns last value", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a></div>`;
+      const doc = pluck(testHtml);
+      expect(doc.xpath("//a/@href").last().text()).toBe("/link2");
+    });
+
+    test("eq() on attribute selector returns nth value", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a><a href="/link3">C</a></div>`;
+      const doc = pluck(testHtml);
+      expect(doc.xpath("//a/@href").eq(1).text()).toBe("/link2");
+    });
+
+    test("toArray() on attribute selector returns array of selectors", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a></div>`;
+      const doc = pluck(testHtml);
+      const arr = doc.xpath("//a/@href").toArray();
+      expect(arr.length).toBe(2);
+      expect(arr[0].text()).toBe("/link1");
+      expect(arr[1].text()).toBe("/link2");
+    });
+
+    test("each() on attribute selector iterates values", () => {
+      const testHtml = `<div><a href="/link1">A</a><a href="/link2">B</a></div>`;
+      const doc = pluck(testHtml);
+      const hrefs: string[] = [];
+      doc.xpath("//a/@href").each((el) => {
+        hrefs.push(el.text());
+      });
+      expect(hrefs).toEqual(["/link1", "/link2"]);
+    });
+  });
+
+  describe("remove mutation", () => {
+    test("doc.html() reflects removed elements", () => {
+      const testHtml = `<div><script>bad</script><p>good</p></div>`;
+      const doc = pluck(testHtml);
+      doc.xpath("//script").remove();
+      expect(doc.html()).toBe("<div><p>good</p></div>");
+    });
+
+    test("doc.html() reflects multiple removals", () => {
+      const testHtml = `<div><script>1</script><nav>menu</nav><p>content</p><script>2</script></div>`;
+      const doc = pluck(testHtml);
+      doc.xpath("//script").remove();
+      doc.xpath("//nav").remove();
+      expect(doc.html()).toBe("<div><p>content</p></div>");
+    });
+
+    test("chained selectors after remove see updated DOM", () => {
+      const testHtml = `<div><script>bad</script><p>good</p></div>`;
+      const doc = pluck(testHtml);
+      doc.css("script").remove();
+      expect(doc.css("script").ok).toBe(false);
+      expect(doc.css("p").ok).toBe(true);
+    });
+
+    test("html() on root document returns full HTML after mutations", () => {
+      const testHtml = `<html><body><script>x</script><main>content</main></body></html>`;
+      const doc = pluck(testHtml);
+      doc.xpath("//script").remove();
+      const result = doc.html();
+      expect(result).not.toContain("<script>");
+      expect(result).toContain("<main>content</main>");
+    });
+  });
 });
