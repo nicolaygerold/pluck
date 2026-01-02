@@ -306,6 +306,28 @@ export class Selector implements Iterable<Selector> {
     return null;
   }
 
+  outerHtml(): string | null {
+    const node = this.#nodes[0];
+    if (node?.nodeType === 9) {
+      const doc = node as Document;
+      return doc.documentElement?.outerHTML ?? null;
+    }
+    if (node?.nodeType === 1) {
+      return (node as Element).outerHTML;
+    }
+    return null;
+  }
+
+  remove(): void {
+    for (const node of this.#nodes) {
+      if (node.nodeType === 1) {
+        (node as Element).remove();
+      } else if (node.parentNode) {
+        node.parentNode.removeChild(node);
+      }
+    }
+  }
+
   result(): SelectResult {
     if (this.ok) {
       return {

@@ -43,6 +43,9 @@ export interface Selector {
   text(): string;
   attr(name: string): string | null;
   html(): string | null;
+  outerHtml(): string | null;
+
+  remove(): void;
 
   result(): SelectResult;
 }

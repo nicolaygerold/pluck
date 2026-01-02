@@ -1693,4 +1693,76 @@ describe("pluck complex", () => {
       expect(selectorLog?.context?.matches).toBe(2);
     });
   });
+
+  describe("remove", () => {
+    test("removes elements selected by css", () => {
+      const testHtml = `<div><script>alert(1)</script><p>content</p></div>`;
+      const doc = pluck(testHtml);
+      doc.css("script").remove();
+      expect(doc.outerHtml()).toBe("<div><p>content</p></div>");
+    });
+
+    test("removes elements selected by xpath", () => {
+      const testHtml = `<div><nav>menu</nav><article>content</article></div>`;
+      const doc = pluck(testHtml);
+      doc.xpath("//nav").remove();
+      expect(doc.outerHtml()).toBe("<div><article>content</article></div>");
+    });
+
+    test("removes multiple elements", () => {
+      const testHtml = `<div><script>1</script><p>keep</p><script>2</script></div>`;
+      const doc = pluck(testHtml);
+      doc.css("script").remove();
+      expect(doc.outerHtml()).toBe("<div><p>keep</p></div>");
+    });
+
+    test("strips unwanted elements before processing", () => {
+      const testHtml = `
+        <html>
+          <body>
+            <nav>navigation</nav>
+            <article>main content</article>
+            <script>tracking()</script>
+            <aside>ads</aside>
+          </body>
+        </html>
+      `;
+      const doc = pluck(testHtml);
+      const xpathsToStrip = ["//nav", "//script", "//aside"];
+      for (const xpath of xpathsToStrip) {
+        doc.xpath(xpath).remove();
+      }
+      const result = doc.css("body").html();
+      expect(result).not.toContain("navigation");
+      expect(result).not.toContain("tracking");
+      expect(result).not.toContain("ads");
+      expect(result).toContain("main content");
+    });
+
+    test("remove on empty selector does nothing", () => {
+      const testHtml = `<div><p>content</p></div>`;
+      const doc = pluck(testHtml);
+      doc.css(".nonexistent").remove();
+      expect(doc.outerHtml()).toBe("<div><p>content</p></div>");
+    });
+  });
+
+  describe("outerHtml", () => {
+    test("returns outerHtml from root document", () => {
+      const testHtml = `<div>content</div>`;
+      const doc = pluck(testHtml);
+      expect(doc.outerHtml()).toBe("<div>content</div>");
+    });
+
+    test("returns outerHtml of selected element", () => {
+      const testHtml = `<div><p class="test">content</p></div>`;
+      const doc = pluck(testHtml);
+      expect(doc.css("p.test").outerHtml()).toBe('<p class="test">content</p>');
+    });
+
+    test("returns null for empty selector", () => {
+      const doc = pluck(`<div>test</div>`);
+      expect(doc.css(".nonexistent").outerHtml()).toBe(null);
+    });
+  });
 });
