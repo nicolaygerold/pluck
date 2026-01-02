@@ -344,7 +344,7 @@ export class Selector implements Iterable<Selector> {
 
   #serializeDocumentChildren(doc: Document): string | null {
     const parts: string[] = [];
-    for (const child of doc.childNodes) {
+    for (const child of Array.from(doc.childNodes)) {
       if (child.nodeType === 1) {
         parts.push((child as Element).outerHTML);
       } else if (child.nodeType === 3) {
