@@ -291,11 +291,14 @@ export class Selector implements Iterable<Selector> {
     }
   }
 
-  text(): string {
-    return this.#nodes
-      .map((n) => n.textContent?.trim() ?? "")
-      .filter((v) => v !== "")
-      .join(" ");
+  text(trim: boolean = true): string {
+    if (trim) {
+      return this.#nodes
+        .map((n) => n.textContent?.trim() ?? "")
+        .filter((v) => v !== "")
+        .join(" ");
+    }
+    return this.#nodes.map((n) => n.textContent ?? "").join("");
   }
 
   attr(name: string): string | null {
@@ -310,7 +313,12 @@ export class Selector implements Iterable<Selector> {
     const node = this.#nodes[0];
     if (node?.nodeType === 9) {
       const doc = node as Document;
-      return doc.documentElement?.outerHTML ?? null;
+      const docEl = doc.documentElement;
+      if (docEl?.tagName?.toLowerCase() === "html") {
+        const body = docEl.querySelector("body");
+        return body?.innerHTML ?? null;
+      }
+      return this.#serializeDocumentChildren(doc);
     }
     if (node?.nodeType === 1) {
       return (node as Element).innerHTML;
@@ -322,12 +330,28 @@ export class Selector implements Iterable<Selector> {
     const node = this.#nodes[0];
     if (node?.nodeType === 9) {
       const doc = node as Document;
-      return doc.documentElement?.outerHTML ?? null;
+      const docEl = doc.documentElement;
+      if (docEl?.tagName?.toLowerCase() === "html") {
+        return docEl.outerHTML;
+      }
+      return this.#serializeDocumentChildren(doc);
     }
     if (node?.nodeType === 1) {
       return (node as Element).outerHTML;
     }
     return null;
+  }
+
+  #serializeDocumentChildren(doc: Document): string | null {
+    const parts: string[] = [];
+    for (const child of doc.childNodes) {
+      if (child.nodeType === 1) {
+        parts.push((child as Element).outerHTML);
+      } else if (child.nodeType === 3) {
+        parts.push(child.textContent ?? "");
+      }
+    }
+    return parts.length > 0 ? parts.join("") : null;
   }
 
   remove(): void {
@@ -382,8 +406,11 @@ class TextSelector extends Selector {
     return this.#values;
   }
 
-  override text(): string {
-    return this.#values.join(" ");
+  override text(trim: boolean = true): string {
+    if (trim) {
+      return this.#values.join(" ");
+    }
+    return this.#values.join("");
   }
 
   override map<T>(fn: (value: string) => T): MappedSelector<T> {

@@ -205,6 +205,17 @@ describe("pluck", () => {
       expect(doc.css("h1").text()).toBe("Wireless Headphones");
     });
 
+    test(".text(false) preserves whitespace", () => {
+      const doc = pluck("<div>  spaced text  </div>");
+      expect(doc.xpath("//div").text(false)).toBe("  spaced text  ");
+    });
+
+    test(".text(true) trims whitespace (default)", () => {
+      const doc = pluck("<div>  spaced text  </div>");
+      expect(doc.xpath("//div").text(true)).toBe("spaced text");
+      expect(doc.xpath("//div").text()).toBe("spaced text");
+    });
+
     test(".attr() returns attribute value", () => {
       const doc = pluck(html);
       expect(doc.css("a").attr("href")).toBe("/buy/123");
@@ -1763,6 +1774,32 @@ describe("pluck complex", () => {
     test("returns null for empty selector", () => {
       const doc = pluck(`<div>test</div>`);
       expect(doc.css(".nonexistent").outerHtml()).toBe(null);
+    });
+  });
+
+  describe("html on fragments", () => {
+    test("returns all sibling elements from fragment", () => {
+      const doc = pluck(`<p>First</p><div>Second</div><p>Third</p>`);
+      expect(doc.html()).toBe("<p>First</p><div>Second</div><p>Third</p>");
+    });
+
+    test("returns fragment with whitespace preserved", () => {
+      const doc = pluck(`<p>First</p>
+<div>Second</div>
+<p>Third</p>`);
+      expect(doc.html()).toBe(`<p>First</p>
+<div>Second</div>
+<p>Third</p>`);
+    });
+
+    test("returns body innerHTML for full HTML document", () => {
+      const doc = pluck(`<html><body><p>First</p><div>Second</div></body></html>`);
+      expect(doc.html()).toBe("<p>First</p><div>Second</div>");
+    });
+
+    test("outerHtml returns all siblings from fragment", () => {
+      const doc = pluck(`<p>First</p><div>Second</div>`);
+      expect(doc.outerHtml()).toBe("<p>First</p><div>Second</div>");
     });
   });
 

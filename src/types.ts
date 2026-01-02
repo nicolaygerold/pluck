@@ -40,7 +40,7 @@ export interface Selector {
   toArray(): Selector[];
   [Symbol.iterator](): Iterator<Selector>;
 
-  text(): string;
+  text(trim?: boolean): string;
   attr(name: string): string | null;
   html(): string | null;
   outerHtml(): string | null;
