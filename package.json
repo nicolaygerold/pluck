@@ -39,7 +39,7 @@
     "test": "bun test",
     "check:all": "bun test && bun run lint && bun run format:check",
     "check:fix": "oxfmt src tests && oxlint --fix src tests && bun test",
-    "build": "bun build src/index.ts --outdir dist --target node && bun run build:types",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm && bun run build:types",
     "build:types": "tsc -p tsconfig.build.json",
     "build:cjs": "bun build src/index.ts --outdir dist --target node --format cjs --outfile dist/index.cjs",
     "prepublishOnly": "bun run build && bun run build:cjs"
