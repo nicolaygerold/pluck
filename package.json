@@ -39,13 +39,14 @@
     "test": "bun test",
     "check:all": "bun test && bun run lint && bun run format:check",
     "check:fix": "oxfmt src tests && oxlint --fix src tests && bun test",
-    "build": "bun build src/index.ts --outdir dist --target node --format esm && bun run build:types",
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=node --packages=external --outfile=dist/index.js && bun run build:types",
     "build:types": "tsc -p tsconfig.build.json",
-    "build:cjs": "bun build src/index.ts --outdir dist --target node --format cjs --outfile dist/index.cjs",
+    "build:cjs": "esbuild src/index.ts --bundle --format=cjs --platform=node --packages=external --outfile=dist/index.cjs",
     "prepublishOnly": "bun run build && bun run build:cjs"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "esbuild": "^0.27.2",
     "oxfmt": "latest",
     "oxlint": "latest",
     "typescript": "^5"
